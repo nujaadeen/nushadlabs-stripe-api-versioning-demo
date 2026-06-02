@@ -89,10 +89,104 @@ src/main/java/com/demo/versioning/
 ## Running the App
 
 ```bash
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+---
+
+## curl Examples
+
+All three examples POST the same payment payload. Only the `Stripe-Api-Version` header changes.
+
+**Shared payload** (save once, reuse below):
+```bash
+BODY='{
+  "customerId": "cust_abc123",
+  "amount": 49.99,
+  "currency": "USD",
+  "billingDetails": {
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "addressLine1": "123 Main St",
+    "city": "New York",
+    "country": "US"
+  }
+}'
+```
+
+**Version `2020-01-01` — flat billing + legacy cents field, no currency**
+```bash
+curl -s -X POST http://localhost:8080/v1/payments \
+  -H "Content-Type: application/json" \
+  -H "Stripe-Api-Version: 2020-01-01" \
+  -d "$BODY" | jq .
+```
+```json
+{
+  "paymentId": "…",
+  "amount": 49.99,
+  "status": "succeeded",
+  "createdAt": "…",
+  "billing_name": "Jane Doe",
+  "billing_email": "jane@example.com",
+  "billing_address": "123 Main St",
+  "billing_city": "New York",
+  "billing_country": "US",
+  "legacy_amount": 4999
+}
+```
+
+**Version `2022-06-15` — flat billing, no legacy field, no currency**
+```bash
+curl -s -X POST http://localhost:8080/v1/payments \
+  -H "Content-Type: application/json" \
+  -H "Stripe-Api-Version: 2022-06-15" \
+  -d "$BODY" | jq .
+```
+```json
+{
+  "paymentId": "…",
+  "amount": 49.99,
+  "status": "succeeded",
+  "createdAt": "…",
+  "billing_name": "Jane Doe",
+  "billing_email": "jane@example.com",
+  "billing_address": "123 Main St",
+  "billing_city": "New York",
+  "billing_country": "US"
+}
+```
+
+**Version `2024-03-10` — nested billing object, currency present, no legacy field**
+```bash
+curl -s -X POST http://localhost:8080/v1/payments \
+  -H "Content-Type: application/json" \
+  -H "Stripe-Api-Version: 2024-03-10" \
+  -d "$BODY" | jq .
+```
+```json
+{
+  "paymentId": "…",
+  "amount": 49.99,
+  "currency": "USD",
+  "status": "succeeded",
+  "createdAt": "…",
+  "billingDetails": {
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "addressLine1": "123 Main St",
+    "city": "New York",
+    "country": "US"
+  }
+}
+```
+
+**List all supported versions**
+```bash
+curl -s http://localhost:8080/v1/versions | jq .
+```
 
 ---
 

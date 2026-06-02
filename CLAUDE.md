@@ -4,53 +4,108 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+No `mvnw` wrapper is present — use the system `mvn` directly.
+
 ```bash
 # Build
-./mvnw clean package
+mvn clean package
 
 # Run
-./mvnw spring-boot:run
+mvn spring-boot:run
 
 # Run all tests
-./mvnw test
+mvn test
 
 # Run a single test class
-./mvnw test -Dtest=MyTestClass
+mvn test -Dtest=PaymentVersioningIntegrationTest
 
 # Run a single test method
-./mvnw test -Dtest=MyTestClass#myMethod
+mvn test -Dtest=PaymentVersioningIntegrationTest#whenVersion2020_responseIsFlattened
 
 # Skip tests during build
-./mvnw clean package -DskipTests
+mvn clean package -DskipTests
 ```
 
-Swagger UI is available at `http://localhost:8080/swagger-ui.html` when the app is running.
+Swagger UI: `http://localhost:8080/swagger-ui.html` (redirects to `/swagger-ui/index.html`).
+OpenAPI JSON: `http://localhost:8080/v3/api-docs`.
 
 ## Architecture
 
-This project implements Stripe-style date-based API versioning. Clients send a `Stripe-Version: YYYY-MM-DD` header; the server pins their experience to that behavioral snapshot. Version logic is isolated in three layers so the core service is never polluted with version conditionals.
-
-### Three-Layer Flow
+Clients send a `Stripe-Api-Version: YYYY-MM-DD` header. The server pins their experience to that behavioral snapshot. Version logic is isolated in three layers so the core service is never polluted with version conditionals.
 
 ```
-Request → [Layer 1: RequestTransformer] → [Layer 2: Service] → [Layer 3: ResponseTransformer] → Response
+Request
+  │
+  ▼ ApiVersionFilter          — resolves + stores ApiVersion in VersionContext (ThreadLocal)
+  ▼ CachedBodyRequestWrapper  — wraps the request so the body can be read twice
+  ▼ RequestCompatibilityInterceptor  — rejects deprecated fields not valid for the resolved version
+  ▼ PaymentController         — delegates to PaymentService (version-unaware)
+  ▼ ResponseCompatibilityService    — applies ordered ResponseTransformer chain
+  │
+Response
 ```
 
-- **Layer 1 (`transformer/`)** — Normalizes incoming request payloads from old shapes to the current internal model before the service sees them.
-- **Layer 2 (`api/service/`)** — Pure business logic, completely version-unaware. Always operates on the latest internal model.
-- **Layer 3 (`transformer/`)** — Reshapes the internal response to match the shape the client's pinned version expects.
+### Package Map
 
-### Version Infrastructure (`version/`)
+| Package | Responsibility |
+|---|---|
+| `version/` | `ApiVersion` enum, `VersionManifest` (feature gates), `VersionContext` (ThreadLocal) |
+| `request/` | `ApiVersionFilter`, `CachedBodyRequestWrapper`, `RequestCompatibilityInterceptor`, `WebConfig` |
+| `core/` | `PaymentRequest`, `PaymentResponse`, `BillingDetails` records/class, `PaymentService` |
+| `response/` | `ResponseTransformer` interface + three implementations, `ResponseCompatibilityService` |
+| `exception/` | `GlobalExceptionHandler` |
+| `controller/` | `PaymentController` |
 
-- `ApiVersion` — Value object wrapping a `LocalDate`. Used throughout as the canonical representation of a client's pinned version.
-- `ApiVersionResolver` — Reads the `Stripe-Version` header from each request and resolves it to an `ApiVersion`. Falls back to the server's configured default when the header is absent.
+### version/ — Version Infrastructure
+
+- **`ApiVersion`** — enum with three constants (`V_2020_01_01`, `V_2022_06_15`, `V_2024_03_10`), each holding a `LocalDate` and description. `fromString(String)` parses `YYYY-MM-DD`; throws `IllegalArgumentException` on unknown dates and `DateTimeParseException` on malformed ones — both caught by the filter.
+- **`VersionManifest`** — `@Component` `EnumMap<ApiVersion, Set<String>>` of active feature gates per version. Gates drive all transformer decisions; never add version conditionals (`if version == X`) in business code — add a gate instead.
+- **`VersionContext`** — `ThreadLocal<ApiVersion>` with static `get/set/clear`. Set by `ApiVersionFilter` before the chain runs; cleared in a `finally` block. Always `null` outside a request (e.g. in `GlobalExceptionHandler` for filter-level errors).
+
+### request/ — Request Compatibility Layer
+
+- **`ApiVersionFilter`** (`OncePerRequestFilter`, `@Component`) reads `Stripe-Api-Version`, falls back to `${api.versioning.default-version}` (`2020-01-01`), resolves the enum, and wraps the request in `CachedBodyRequestWrapper`. Invalid/unknown version dates return a structured `400` directly (bypassing `GlobalExceptionHandler` since filters run before the dispatcher).
+- **`CachedBodyRequestWrapper`** reads the `InputStream` once into a `byte[]` on construction, stores the decoded string as request attribute `cachedRequestBody`, and serves a fresh `ByteArrayInputStream` on every `getInputStream()` call. Required so both the interceptor and the Jackson deserializer can read the body.
+- **`RequestCompatibilityInterceptor`** (`HandlerInterceptor`) checks for `legacy_amount` in query/form params and in the cached JSON body. Returns `400` if the field is present but the resolved version's `legacy_amount_field` gate is inactive.
+- **`WebConfig`** registers `RequestCompatibilityInterceptor`. The filter auto-registers because it's a `@Component`.
+
+### core/ — Business Logic (Version-Unaware)
+
+`PaymentService.process(PaymentRequest)` always works on the latest internal model. It generates a UUID `paymentId`, sets `status = "succeeded"`, sets `createdAt = Instant.now()`, and returns a `PaymentResponse`. It imports nothing from `version.*`.
+
+### response/ — Response Compatibility Layer
+
+`ResponseCompatibilityService` converts `PaymentResponse → Map<String, Object>` via `ObjectMapper.convertValue()`, then pipes the map through all `ResponseTransformer` beans in `@Order` order:
+
+| Order | Class | Gate checked | Action |
+|---|---|---|---|
+| 1 | `CurrencyCodeTransformer` | `multi_currency` absent → remove `currency` key |
+| 2 | `FlattenBillingTransformer` | `flat_billing` present → promote `billingDetails.*` to top-level `billing_*` keys |
+| 3 | `LegacyAmountTransformer` | `legacy_amount_field` present → add `legacy_amount` = `amount × 100` (int) |
+
+To add a new transformer: create a `@Component` implementing `ResponseTransformer`, give it the next `@Order`, and add its gate to the relevant versions in `VersionManifest`.
+
+### Feature Gate Matrix
+
+| Version | `flat_billing` | `legacy_amount_field` | `nested_billing_preview` | `nested_billing` | `multi_currency` |
+|---|---|---|---|---|---|
+| `2020-01-01` | ✓ | ✓ | | | |
+| `2022-06-15` | ✓ | | ✓ | | |
+| `2024-03-10` | | | | ✓ | ✓ |
+
+### Error Response Shape
+
+All errors (from `GlobalExceptionHandler` and directly from filters/interceptors) return:
+```json
+{ "error": { "code": "...", "message": "...", "version": "..." } }
+```
+`version` is `VersionContext.get().name()` when available, `"unknown"` for filter-level errors (before the version is resolved).
 
 ### Adding a New Breaking Change
 
-1. Pick a new date (the "version date" for this change).
-2. Add a branch in the relevant `RequestTransformer` to normalize the old request shape when `apiVersion.isBefore(newDate)`.
-3. Change the service and internal models freely — this is the new canonical shape.
-4. Add a branch in the relevant `ResponseTransformer` to downgrade the response when `apiVersion.isBefore(newDate)`.
-5. Document the new date in the API changelog.
+1. Add a new constant to `ApiVersion` with the change date.
+2. Add its gate set to `VersionManifest`.
+3. Add a `@Component @Order(N) ResponseTransformer` (and/or a check in `RequestCompatibilityInterceptor`) that activates on the new gate.
+4. Change `PaymentService` / domain models freely — this is always the latest shape.
 
-No existing client is broken; they stay pinned to their old date and hit the compatibility branches transparently.
+No existing client breaks; they stay pinned to their old date and hit the compatibility branches transparently.

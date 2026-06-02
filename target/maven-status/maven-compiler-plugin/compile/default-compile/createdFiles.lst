@@ -6,10 +6,11 @@ com/demo/versioning/response/ResponseCompatibilityService$1.class
 com/demo/versioning/response/FlattenBillingTransformer.class
 com/demo/versioning/request/ApiVersionFilter.class
 com/demo/versioning/core/BillingDetails.class
+com/demo/versioning/exception/GlobalExceptionHandler.class
 com/demo/versioning/core/PaymentResponse$PaymentResponseBuilder.class
 com/demo/versioning/version/VersionContext.class
-com/demo/versioning/core/PaymentService.class
 com/demo/versioning/version/ApiVersion.class
+com/demo/versioning/core/PaymentService.class
 com/demo/versioning/response/ResponseCompatibilityService.class
 com/demo/versioning/core/PaymentResponse.class
 com/demo/versioning/response/LegacyAmountTransformer.class
