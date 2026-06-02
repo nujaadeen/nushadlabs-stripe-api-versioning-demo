@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.format.DateTimeParseException;
 
 @Component
 public class ApiVersionFilter extends OncePerRequestFilter {
@@ -32,7 +33,7 @@ public class ApiVersionFilter extends OncePerRequestFilter {
         ApiVersion version;
         try {
             version = ApiVersion.fromString(raw);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | DateTimeParseException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                     "Invalid API version: '" + raw + "'. Expected one of the supported version dates.");
             return;
