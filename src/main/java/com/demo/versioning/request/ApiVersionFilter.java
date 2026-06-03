@@ -46,7 +46,7 @@ public class ApiVersionFilter extends OncePerRequestFilter {
 
         VersionContext.set(version);
         try {
-            chain.doFilter(new CachedBodyRequestWrapper(request), response);
+            chain.doFilter(request, response);
         } finally {
             VersionContext.clear();
         }
