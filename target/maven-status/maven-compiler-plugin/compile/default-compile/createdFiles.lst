@@ -5,6 +5,7 @@ com/demo/versioning/gate/V2022To2024RequestGate.class
 com/demo/versioning/core/BillingDetails.class
 com/demo/versioning/exception/GlobalExceptionHandler.class
 com/demo/versioning/version/VersionContext.class
+com/demo/versioning/transformer/ResponseTransformer.class
 com/demo/versioning/core/PaymentResponse.class
 com/demo/versioning/gate/RequestGateChain.class
 com/demo/versioning/request/RequestCompatibilityInterceptor.class
@@ -16,6 +17,7 @@ com/demo/versioning/gate/V2020To2022RequestGate.class
 com/demo/versioning/ApiVersioningDemoApplication.class
 com/demo/versioning/response/CurrencyCodeTransformer.class
 com/demo/versioning/core/PaymentRequest.class
+com/demo/versioning/transformer/V2024To2022ResponseTransformer.class
 com/demo/versioning/core/PaymentResponse$PaymentResponseBuilder.class
 com/demo/versioning/core/PaymentService.class
 com/demo/versioning/version/ApiVersion.class

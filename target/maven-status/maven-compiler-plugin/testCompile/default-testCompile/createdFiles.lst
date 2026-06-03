@@ -1,6 +1,7 @@
 com/demo/versioning/ApiVersionOrderingTest.class
-com/demo/versioning/ApiVersioningDemoApplicationTests.class
 com/demo/versioning/RequestGateChainTest.class
+com/demo/versioning/V2020To2022RequestGateTest.class
+com/demo/versioning/ApiVersioningDemoApplicationTests.class
 com/demo/versioning/V2022To2024RequestGateTest.class
 com/demo/versioning/PaymentVersioningIntegrationTest.class
-com/demo/versioning/V2020To2022RequestGateTest.class
+com/demo/versioning/V2024To2022ResponseTransformerTest.class
