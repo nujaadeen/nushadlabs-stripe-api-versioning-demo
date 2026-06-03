@@ -10,6 +10,7 @@ com/demo/versioning/request/WebConfig.class
 com/demo/versioning/gate/RequestGate.class
 com/demo/versioning/request/CachedBodyRequestWrapper$1.class
 com/demo/versioning/version/VersionManifest.class
+com/demo/versioning/gate/V2020To2022RequestGate.class
 com/demo/versioning/ApiVersioningDemoApplication.class
 com/demo/versioning/response/CurrencyCodeTransformer.class
 com/demo/versioning/core/PaymentRequest.class
