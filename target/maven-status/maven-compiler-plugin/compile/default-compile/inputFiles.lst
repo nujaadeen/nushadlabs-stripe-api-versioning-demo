@@ -19,6 +19,7 @@
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/response/ResponseCompatibilityService.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/response/ResponseTransformer.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/transformer/ResponseTransformer.java
+/home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/transformer/V2022To2020ResponseTransformer.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/transformer/V2024To2022ResponseTransformer.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/version/ApiVersion.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/main/java/com/demo/versioning/version/VersionContext.java

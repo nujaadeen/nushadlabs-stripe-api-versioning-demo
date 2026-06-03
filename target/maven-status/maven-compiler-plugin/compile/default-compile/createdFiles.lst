@@ -22,6 +22,7 @@ com/demo/versioning/core/PaymentResponse$PaymentResponseBuilder.class
 com/demo/versioning/core/PaymentService.class
 com/demo/versioning/version/ApiVersion.class
 com/demo/versioning/response/ResponseCompatibilityService.class
+com/demo/versioning/transformer/V2022To2020ResponseTransformer.class
 com/demo/versioning/response/LegacyAmountTransformer.class
 com/demo/versioning/response/ResponseTransformer.class
 com/demo/versioning/controller/PaymentController.class

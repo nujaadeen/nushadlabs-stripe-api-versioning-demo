@@ -3,5 +3,6 @@
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/PaymentVersioningIntegrationTest.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/RequestGateChainTest.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/V2020To2022RequestGateTest.java
+/home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/V2022To2020ResponseTransformerTest.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/V2022To2024RequestGateTest.java
 /home/m.nushath/Documents/nushad labs/stripe-api-versioning-demo/src/test/java/com/demo/versioning/V2024To2022ResponseTransformerTest.java
