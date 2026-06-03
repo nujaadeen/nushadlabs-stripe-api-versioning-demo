@@ -1,10 +1,13 @@
 package com.demo.versioning.controller;
 
 import com.demo.versioning.core.PaymentRequest;
+import com.demo.versioning.core.PaymentResponse;
 import com.demo.versioning.core.PaymentService;
-import com.demo.versioning.response.ResponseCompatibilityService;
+import com.demo.versioning.gate.RequestGateChain;
+import com.demo.versioning.transformer.ResponseTransformerChain;
 import com.demo.versioning.version.ApiVersion;
 import com.demo.versioning.version.VersionContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +36,9 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final ResponseCompatibilityService responseCompatibilityService;
+    private final RequestGateChain requestGateChain;
+    private final ResponseTransformerChain responseTransformerChain;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("/payments")
     @Operation(
@@ -44,11 +49,11 @@ public class PaymentController {
                     server default (`2020-01-01`).
 
                     **Version behaviour**
-                    | Version | billingDetails | currency | legacy_amount |
-                    |---|---|---|---|
-                    | 2020-01-01 | flat (billing_*) | removed | added |
-                    | 2022-06-15 | flat (billing_*) | removed | — |
-                    | 2024-03-10 | nested object | present | — |
+                    | Version | Request shape | Response shape |
+                    |---|---|---|
+                    | 2020-01-01 | flat snake_case fields | flat billing_*, amount_cents, no currency |
+                    | 2022-06-15 | nested billing map | nested billing map, currency present |
+                    | 2024-03-10 | nested billingDetails | nested billingDetails, currency present |
                     """,
             parameters = @Parameter(
                     name = "Stripe-Api-Version",
@@ -79,17 +84,18 @@ public class PaymentController {
             ),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Payment succeeded — shape varies by version"),
-                    @ApiResponse(responseCode = "400", description = "Invalid version header or unsupported field for version")
+                    @ApiResponse(responseCode = "400", description = "Invalid version header")
             }
     )
     public ResponseEntity<Map<String, Object>> createPayment(
-            @RequestHeader(name = "Stripe-Api-Version", required = false) String versionHeader,
-            @RequestBody PaymentRequest paymentRequest) {
+            @RequestBody Map<String, Object> rawBody) {
 
         ApiVersion version = VersionContext.get();
-        var internalResponse = paymentService.process(paymentRequest);
-        var versionedResponse = responseCompatibilityService.toVersionedResponse(internalResponse, version);
-        return ResponseEntity.ok(versionedResponse);
+        Map<String, Object> promoted = requestGateChain.open(rawBody, version);
+        PaymentRequest request = objectMapper.convertValue(promoted, PaymentRequest.class);
+        PaymentResponse response = paymentService.process(request);
+        Map<String, Object> out = responseTransformerChain.transform(response, version);
+        return ResponseEntity.ok(out);
     }
 
     @GetMapping("/versions")
