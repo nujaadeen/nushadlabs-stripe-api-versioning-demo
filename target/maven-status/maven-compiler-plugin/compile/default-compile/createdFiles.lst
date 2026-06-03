@@ -6,6 +6,7 @@ com/demo/versioning/core/BillingDetails.class
 com/demo/versioning/exception/GlobalExceptionHandler.class
 com/demo/versioning/version/VersionContext.class
 com/demo/versioning/core/PaymentResponse.class
+com/demo/versioning/gate/RequestGateChain.class
 com/demo/versioning/request/RequestCompatibilityInterceptor.class
 com/demo/versioning/request/WebConfig.class
 com/demo/versioning/gate/RequestGate.class
