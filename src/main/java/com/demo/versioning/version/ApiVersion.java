@@ -2,6 +2,8 @@ package com.demo.versioning.version;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 public enum ApiVersion {
 
@@ -27,6 +29,20 @@ public enum ApiVersion {
 
     public boolean isOlderThan(ApiVersion other) {
         return this.date.isBefore(other.date);
+    }
+
+    public boolean isBefore(ApiVersion other) {
+        return this.date.isBefore(other.date);
+    }
+
+    public boolean isAfter(ApiVersion other) {
+        return this.date.isAfter(other.date);
+    }
+
+    public static List<ApiVersion> ordered() {
+        return Arrays.stream(values())
+                .sorted(Comparator.comparing(ApiVersion::getDate))
+                .toList();
     }
 
     public static ApiVersion fromString(String dateStr) {
