@@ -10,6 +10,7 @@ import com.demo.versioning.version.VersionContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -57,6 +58,7 @@ public class PaymentController {
                     """,
             parameters = @Parameter(
                     name = "Stripe-Api-Version",
+                    in = ParameterIn.HEADER,
                     description = "API version date (YYYY-MM-DD). Supported: 2020-01-01, 2022-06-15, 2024-03-10.",
                     example = "2024-03-10",
                     schema = @Schema(type = "string"),
